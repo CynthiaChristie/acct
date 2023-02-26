@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link rel="stylesheet" href="style.css">
+
+<head>
+
+	<meta charset="utf-8">
+	<title id="title"></title>
+	
+	<script>
+		window.history.forward();
+		function preventBack() {
+			window.history.forward();
+		}
+		
+		setTimeout("preventBack()", 0);
+		
+		window.onunload = function() { null };
+	</script>
+
+</head>
+
+<body>
+	<div id="origEntry">
+		<table>
+			<tr>
+				<td>Vendor:</td>
+				<td style="width: 95vw;" id="vendor"></td>
+			</tr>
+			<tr>
+				<td>Total Debit:</td>
+				<td id="debit"></td>
+			</tr>
+			<tr>
+				<td>Not Reassigned:</td>
+				<td id="remain"></td>
+			<tr>
+				<td>Charge Date:</td>
+				<td id="charge"></td>
+			</tr>
+			<tr>
+				<td>Posted Date:</td>
+				<td id="posted"></td>
+			</tr>
+			<tr>
+				<td>Capital One Category</td>
+				<td id="default"></td>
+			</tr>
+			<tr>
+				<td>Working Category:</td>
+				<td id="category"></td>
+			</tr>
+		<table>
+	</div>
+	
+
+	
+<div id="entryEditWindow">	
+</div>
+
+<!--ACCTDATA-->	
+</body>
+
+</html>

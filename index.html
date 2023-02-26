@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<link rel="stylesheet" href="style.css">
+
+<head>
+
+	<meta charset="utf-8">
+	<title>Accounting System</title>
+	
+	<script>
+		window.history.forward();
+		function preventBack() {
+			window.history.forward();
+		}
+		
+		setTimeout("preventBack()", 0);
+		
+		window.onunload = function() { null };
+	</script>
+
+
+
+</head>
+
+<header>
+	<div id="navbar">
+		<h1>Accounting System<h1>
+		<div style="font-size: 16px;" id="acctStatus">Status: uninitialized.</div>
+		
+		<div class="flexbox">
+			<section id="acct">
+				<div style="text-align: center;">
+					<a href="AccGraph.html">View Graphs</a><br>
+				</div>
+			</section>
+			<section>
+				<label for="newCsv">New Accounting Data</label>
+				<form enctype = "multipart/form-data" action = "#" method = "post">
+					<input type="file" id="newCsv" name="filename" accept="text/csv">
+					<p> <input type = "submit" value = "Upload Now" /> </p>
+				</form>
+			</section>
+			<section>
+			</section>
+			<section>
+			</section>
+		</div>
+		<div style="font-size: 12px; text-align: center;"><p>Press button to sort by that field.</p></div>
+		<table>
+			<tr>
+			<td style="width: 15vw; text-align: center;"><button onclick="sortAcctByCharge()" type="button">Charge Date</button></td>
+			<td style="width: 15vw; text-align: center;"><button onclick="sortAcctByPosted()" type="button">Posted Date</button></td>
+			<td style="width: 30vw; text-align: center;"><button onclick="sortAcctByVendor()" type="button">Vendor</button></td>
+			<td style="width: 15vw; text-align: center;"><button onclick="sortAcctByCategory()" type="button">Category</button></td>
+			<td style="width: 15vw; text-align: center;"><button onclick="sortAcctByDebit()" type="button">Debit</button></td>
+			</tr>
+		</table>
+	</div>
+</header>
+
+
+<body>
+	<div id="main">
+		<div id="acctwindow"></div>
+	</div>
+
+</body>
+<!--ACCTDATA-->
+
+</html>
