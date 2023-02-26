@@ -92,6 +92,9 @@
 		var acctHtml = "";
 		
 		for ( x=0 ; x < acct.length ; x++ ) {
+			if ( acct[x]["Debit"] == "0.00" ) {
+				continue;
+			}
 			linkRef = "accentry.html?key=" + acct[x]["Receipt-ID"] + "&index=" + acct[x]["Receipt-Index"]
 
 			acctHtml = acctHtml + "<a href=\"" + linkRef + "\"><pre>" +

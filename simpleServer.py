@@ -210,7 +210,33 @@ def splitPostData(data):
 #
 # PAGE AND RETURN OBJECT FUNCTIONS
 #
+def plusToSpace(s):
 
+	t=""
+	
+	for item in s:
+		if item == "+":
+			t = t + " "
+		else:
+			t = t + item
+			
+	return(t)
+
+def dollarsToCents(s):
+	t = s.split(".")
+	return( int(t[0])*100 + int(t[1]) )
+	
+def centsToDollars(c):
+
+	s = str(int(c/100))+"."
+	
+	if c%100 < 10:
+		s = s + "0"
+		
+	s = s + str(c%100)
+	
+	return(s)
+		
 def prepareAcctEntry(key,index,mods):
 
 	Pdic = dict()
@@ -230,8 +256,9 @@ def prepareAcctEntry(key,index,mods):
                 		thisAcct.append(c)
                 			
 	
-	anchor = float(acct[eIndex]["Debit"])
-	transfer = 0.0
+	anchor = dollarsToCents(acct[eIndex]["Debit"])
+	
+	transfer = 0
 	
 	collector = ""
 
@@ -245,22 +272,22 @@ def prepareAcctEntry(key,index,mods):
 			continue
 
 		if mod[0] == "dollars":
-			transfer = transfer + float(mod[1])
+			transfer = transfer + int(mod[1])*100
 
 		elif mod[0] == "cents":
-			transfer = transfer + float(mod[1])/100
+			transfer = transfer + int(mod[1])
 
 		elif mod[0] == "category" or mod[0] == "cattext":
-			collector = mod[1]
+			collector = plusToSpace(mod[1])
 			
 		elif mod[0] == "delete":
 			if deleteFlag == True:
 				continue
 			deleteFlag = True
-			transfer = float(acct[int(mod[1])]["Debit"])
+			transfer = dollarsToCents(acct[int(mod[1])]["Debit"])
 			anchor = anchor + transfer
-			transfer = 0.0
-			acct[eIndex]["Debit"] = floatToDollar(anchor)
+			transfer = 0
+			acct[eIndex]["Debit"] = centsToDollars(anchor)
 			print("debug:",len(acct))
 
 			acct.pop(int(mod[1]))	
@@ -285,20 +312,22 @@ def prepareAcctEntry(key,index,mods):
 
 
 
-	if collector != "" and transfer > 0.0:
+	if collector != "" and transfer > 0:
 	
 		if transfer > anchor:
 			transfer = anchor
-		
+
+#
+# This....? \/
 		if catDict.get(collector,None) is not None:
 			transfer = transfer + catDict[collector][1]
 		
 		anchor = anchor = anchor - transfer
 	
-		acct[eIndex]["Debit"] = floatToDollar(anchor)
+		acct[eIndex]["Debit"] = centsToDollars(anchor)
 	
 		if catDict.get(collector,None) is not None:
-			acct[catDict[collector][0]]["Debit"] = floatToDollar(transfer)
+			acct[catDict[collector][0]]["Debit"] = centsToDollars(transfer)
 		else:
 			dic = dict()
 	
@@ -306,7 +335,7 @@ def prepareAcctEntry(key,index,mods):
 			dic["Posted Date"] = acct[eIndex]["Posted Date"]
 			dic["Vendor"] = acct[eIndex]["Vendor"]
 			dic["Category"] = collector
-			dic["Debit"] = floatToDollar(transfer)
+			dic["Debit"] = centsToDollars(transfer)
 			dic["Receipt-ID"] = acct[eIndex]["Receipt-ID"]
 			dic["Receipt-Index"] = acct[eIndex]["Receipt-Index"]
 			
@@ -327,7 +356,7 @@ def prepareAcctEntry(key,index,mods):
 	while count < len(categories):
 		for item in thisAcct:
 			if categories[count] == acct[item]["Category"]:
-				catDict[categories[count]] = [ item, float(acct[item]["Debit"]) ]
+				catDict[categories[count]] = [ item, dollarsToCents(acct[item]["Debit"]) ]
 				categories.pop(count)
 				count = 0
 				break
@@ -363,14 +392,14 @@ def prepareAcctEntry(key,index,mods):
 				myHtml.append("<table><tr><th style=\"text-align:left;\">Category</th>\n")
 				myHtml.append("<th style=\"text-align: left;\">Amount</th></tr>\n")
                 
-				total = 0.0
+				total = 0
                 		
 				for item in thisAcct:
 					myHtml.append("<tr><td>" + acct[item]["Category"] + "</td><td>" + acct[item]["Debit"] + "</td>" +
 "<td><a href=\"accentry.html?delete=" + str(item) + "&key=" + key + "&index=" + index + "\">DELETE</a></td></tr>\n")
-					total = total + float(acct[item]["Debit"])
+					total = total + dollarsToCents(acct[item]["Debit"])
 					
-				myHtml.append("<hr><tr><td>Total</td><td>" + floatToDollar(total) + "</td>\n")
+				myHtml.append("<hr><tr><td>Total</td><td>" + centsToDollars(total) + "</td>\n")
 				myHtml.append("</table><hr>\n")
 
 			if acct[eIndex]["Debit"] != "0.00":
@@ -461,20 +490,6 @@ def getBinaryFile(name):
 # ACCT FUNCTIONS
 #
 
-def floatToDollar(num):
-
-        num = str(int(num * 100))
-        
-        if len(num) == 1:
-                return("0.0"+num)
-                
-        if len(num) == 2:
-                return("0."+num)
-        
-        index = len(num) - 2
-        
-        return(num[:index]+"."+num[index:])
-        
 
 def importAcctCsv():
 # Here we don't need all the code to do with OldReceipts because this is existing data.
