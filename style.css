@@ -3,7 +3,6 @@
 }
 
 html {
-
 }
 
 a {
@@ -25,67 +24,9 @@ body {
 background-color: black;
 }
 
-#main {
-position: relative;
-top: 50vh;
-border-style: solid;
-border-color: orange;
-border-width: 2px;
 
 
-}
 
-#dollars {
-width: 8vw;
-}
-
-#cents {
-width: 4vw;
-}
-
-#origEntry {
-position: relative;
-width: 95vw;
-background-color: rgba(96,0,102,1);
-color: #eebbcc;
-margin: 2px;
-border-style: solid;
-border-color: orange;
-border-width: 2px;
-font-size: 18px;
-}
-
-#entryEditWindow {
-position: relative;
-width: 95vw;
-
-background-color: rgba(96,0,102,1);
-color: #eebbcc;
-margin: 2px;
-border-style: solid;
-border-color: orange;
-border-width: 2px;
-font-size: 14px;
-}
-
-#acctwindow {
-color: #eebbcc;
-font-size: 24px;
-}
-
-/*
-a {
-margin-bottom: 2px;
-font-size: 12px;
-background-color: gray;
-color: rgba(96,0,102,1);
-width: 60vw;
-border-style: solid;
-border-color: #777777;
-
-}
-
-*/
 h1 {
 position: relative;
 font-size: 36px;
@@ -110,30 +51,6 @@ border-color: rgba(96,0,102,1);
 
 }
 
-#acct {
-position: relative;
-}
-
-#navbar {
-position: relative;
-top:0;
-left:0;
-
-background-color: rgba(96,0,102,1);
-
-border-style: solid;
-border-color: yellow;
-color: #eebbcc;
-
-}
-
-.flexbox {
-display: flex;
-flex-flow: row wrap;
-justify-content: space-around;
-margin: auto;
-}
-
 td {
 width: 18vw;
 text-align: left;
@@ -152,3 +69,151 @@ margin-bottom: 3px;
 font-size: 22px;
 
 }
+
+
+#acct {
+/*
+** index.html - the "View Graphs" stub
+*/
+position: relative;
+}
+
+
+
+
+#acctStatus {
+/*
+** index.html - The status line display.
+*/
+}
+
+
+
+#acctwindow {
+/*
+** index.html - The entry list
+*/
+color: #eebbcc;
+font-size: 24px;
+}
+
+
+
+
+
+#cents {
+/*
+** accentry.html - input field for subentry form
+*/
+width: 4vw;
+}
+
+
+
+
+
+
+#dollars {
+/*
+** accentry.html - input field for subentry form
+*/
+width: 8vw;
+}
+
+
+
+#entryEditWindow {
+/*
+** accentry.html - window for adding/editing/deleting subentries
+*/
+position: relative;
+width: 95vw;
+
+background-color: rgba(96,0,102,1);
+color: #eebbcc;
+margin: 2px;
+border-style: solid;
+border-color: orange;
+border-width: 2px;
+font-size: 14px;
+}
+
+
+
+
+
+#main {
+/*
+** index.html - encloses acctWindow
+*/
+position: relative;
+top: 50vh;
+border-style: solid;
+border-color: orange;
+border-width: 2px;
+}
+
+
+
+#navbar {
+/*
+** index.html - The page header including the banner and the flexbox
+*/
+position: relative;
+top:0;
+left:0;
+
+background-color: rgba(96,0,102,1);
+
+border-style: solid;
+border-color: yellow;
+color: #eebbcc;
+
+}
+
+
+
+#newCsv {
+/*
+** index.html - The input element for csv file upload
+*/
+}
+
+
+
+
+#origEntry {
+/*
+** accentry.html - displays data about anchor entry
+*/
+position: relative;
+width: 95vw;
+background-color: rgba(96,0,102,1);
+color: #eebbcc;
+margin: 2px;
+border-style: solid;
+border-color: orange;
+border-width: 2px;
+font-size: 18px;
+}
+
+
+
+#upload {
+/*
+** index.html - box for uploading new entries
+*/
+}
+
+
+
+
+
+.flexbox {
+display: flex;
+flex-flow: row wrap;
+justify-content: space-around;
+margin: auto;
+}
+
+

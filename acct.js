@@ -8,10 +8,15 @@
 	
 		var c;
 		var d;
+	
 		var obj;
 		var aObj;
 		var bObj;
-		
+	
+		var col;
+		var aCol;
+		var bCol;
+			
 	/*	console.log("Sorting acct by "+sortBy); */
 	
 		if(acct.length == 0) {
@@ -33,6 +38,10 @@
 					obj = acct[d];
 					acct[d] = acct[d+1];
 					acct[d+1] = obj;
+					
+					col = catColors[d];
+					catColors[d] = catColors[d+1];
+					catColors[d+1] = col;
 			/*		console.log(acct[d],acct[d+1]); */
 				}
 			}
@@ -97,7 +106,9 @@
 			}
 			linkRef = "accentry.html?key=" + acct[x]["Receipt-ID"] + "&index=" + acct[x]["Receipt-Index"]
 
-			acctHtml = acctHtml + "<a href=\"" + linkRef + "\"><pre>" +
+			acctHtml = acctHtml + "<a href=\"" + linkRef + 
+			"\" style=\"color: " + catColors[x] + ";\">" + 
+			"<pre>" + 
 			padWithSpaces(acct[x]["Charge Date"],15,1) +
 			padWithSpaces(acct[x]["Posted Date"],15,1) +
 			padWithSpaces(acct[x]["Vendor"],30,1)      +

@@ -26,26 +26,30 @@
 <header>
 	<div id="navbar">
 		<h1>Accounting System<h1>
-		<div style="font-size: 16px;" id="acctStatus">Status: uninitialized.</div>
+		<div style="font-size: 16px;" id="acctStatus"></div>
 		
 		<div class="flexbox">
+
+			<section id="upload">
+				<label for="newCsv">New Accounting Data</label>
+				<form enctype = "multipart/form-data" action = "index.html" method = "post">
+					<input type="file" id="newCsv" name="filename" accept="text/csv">
+					<p> <input type = "submit" value = "Upload Now" /> </p>
+				</form>
+			</section>
+			<section id="dateRange">				
+				<form id="dateRangeForm" action="#">
+				</form>
+			</section>
+			<section>
+			</section>
 			<section id="acct">
 				<div style="text-align: center;">
 					<a href="AccGraph.html">View Graphs</a><br>
 				</div>
 			</section>
-			<section>
-				<label for="newCsv">New Accounting Data</label>
-				<form enctype = "multipart/form-data" action = "#" method = "post">
-					<input type="file" id="newCsv" name="filename" accept="text/csv">
-					<p> <input type = "submit" value = "Upload Now" /> </p>
-				</form>
-			</section>
-			<section>
-			</section>
-			<section>
-			</section>
 		</div>
+		<div id="displayDates" style="font-size: 12px; text-align: center;"></div>
 		<div style="font-size: 12px; text-align: center;"><p>Press button to sort by that field.</p></div>
 		<table>
 			<tr>

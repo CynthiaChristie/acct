@@ -1,3 +1,5 @@
+
+
 # Python 3 server example
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import time
@@ -25,38 +27,79 @@ class MyServer(BaseHTTPRequestHandler):
         
 
 		newAcctCsv( getStrings(body) )
-		
+
+		resetDates()
+		makeDisplaySet()		
 		importHtml()
+
 
 		for line in html:
 			self.wfile.write(bytes(line, "utf-8"))
 		
 	def do_GET(self):
+	
 		print(self.path)
-		if self.path == "/" or self.path == "/index.html" or self.path[:len(accHomeUrl)] == accHomeUrl:
 		
-			action = re.findall(".*?action=(.*)$",self.path)
+		
+		
+		if self.path == "/" or self.path[:2] == "/?" or self.path == "/index.html" or self.path[:len(accHomeUrl)] == accHomeUrl:
+		
+			myUrl = urllib.parse.unquote(self.path)
+		
+			for regex in  [ ".+?\?(.+)#", ".+?\?(.+)$" ]:
+				tail = re.findall(regex,myUrl)
+	
+				if len(tail) == 1:
+					tail = tail[0]
+					break
+		
+			newStartDate = globStrings.get("acctStartDate","")
+			newEndDate = globStrings.get("acctEndDate","")
 			
-			if len(action) == 1:
-				action = action[0]
+			if len(tail) == 0:
+				tail = []
+			else:
+				tail = tail.split("&")
+			
+			for item in tail:
+		
+				start = re.findall("start=(.+)$",item)
+				if len(start) == 1:
+					newStartDate = start[0]
 				
-				if action == "save":
-					print("save")
-					acctToCsv()
+				end = re.findall("end=(.+)$",item)
+				if len(end) == 1:
+					newEndDate = end[0]
+				
+				action = re.findall("action=(.+)$",item)
+			
+				if len(action) == 1:
+					action = action[0]
+				
+					if action == "save":
+						print("save")
+						acctToCsv()
 					
-				if action == "reload":
-					print("reload")
-					while len(acct) > 0:
-						acct.pop(0)
-					importAcctCsv()
+					if action == "reload":
+						print("reload")
+						importAcctCsv()
 					
-					
+			if newStartDate > newEndDate:
+				trade = newStartDate
+				newStartDate = newEndDate
+				newEndDate = trade
+				
+			globStrings["acctStartDate"] = newStartDate
+			globStrings["acctEndDate"] = newEndDate
+				
 			print("Sending index.html")
 			self.send_response(200)
 			self.send_header("Content-type", "text/html")
 			self.end_headers()
-			
+
+			makeDisplaySet()	
 			importHtml()
+
         
 			for line in html:
 				self.wfile.write(bytes(line, "utf-8"))
@@ -432,7 +475,12 @@ def prepareAcctEntry(key,index,mods):
 			if acct[eIndex]["Debit"] != "0.00":
 				myHtml.append("document.getElementById(\"dollars\").focus()\n")
             
-			myHtml.append("document.getElementById(\"vendor\").innerHTML = \"" + acct[eIndex]["Vendor"] +"\";\n")
+			s = ""
+			for item in acct[eIndex]["Vendor"]:
+				if item != '"' and item !='#':
+					s = s + item
+            				
+			myHtml.append("document.getElementById(\"vendor\").innerHTML = \"" + s +"\";\n")
 			myHtml.append("document.getElementById(\"debit\").innerHTML = \"" + oldReceipts[key]["Debit"] +"\";\n")
 			myHtml.append("document.getElementById(\"remain\").innerHTML = \"" + acct[eIndex]["Debit"] + "\";\n")
 			myHtml.append("document.getElementById(\"charge\").innerHTML = \"" + acct[eIndex]["Charge Date"] +"\";\n")
@@ -448,6 +496,8 @@ def prepareAcctEntry(key,index,mods):
     
 def importCss():
 
+	css.clear()
+		
 	fHand = open("style.css","r")
 	
 	for line in fHand:
@@ -457,18 +507,40 @@ def importCss():
 	
 def importHtml():
 
+	html.clear()
+		
 	fHand = open("index.html","r")
 	jHand = open("acct.js","r")
-	
+		
 	for line in fHand:
 		html.append(line)
 		if line.rstrip() == "<!--ACCTDATA-->":
+
 			html.append("<script>\n")
-			html.append("var acctCount = "+str(len(acct)) + ";\n")
-			html.append("var acct = " + json.dumps(acct) + ";\n")
-#			html.append("var acctStatus = \"Status + " + acctStatus + "\";\n")
-            
-#			html.append("document.getElementById(\"acctStatus\").innerHtml = acctStatus;")
+			html.append("var acctCount = "+str(len(displayAcct)) + ";\n")
+
+			html.append("var acct = " + json.dumps(displayAcct) + ";\n")
+			html.append("var catColors = " + json.dumps(catColorMaker()) + ";\n")
+			
+			html.append("document.getElementById(\"dateRangeForm\").innerHTML = `" +
+			"<label for=\"start\">Start Date</label>\n" +
+			"<label for=\"end\">End Date</label>\n" +
+			"<input type=\"date\" id=\"start\" name=\"start\" min=\"" + globStrings["acctMinStartDate"] +
+				"\" max=\"" + globStrings["acctMaxEndDate"] + "\">\n" +
+			"<input type=\"date\" id=\"end\" name=\"end\" min=\"" + globStrings["acctMinStartDate"] +
+				"\" max=\"" + globStrings["acctMaxEndDate"] + "\">\n" +
+				"<br><input type=\"submit\" value=\"Set\">\n" +
+				"<br><a href=\"index.html?start=" + globStrings["acctMinStartDate"] +
+				"&end=" + globStrings["acctMaxEndDate"] + "\">Reset</a>\n" +
+			"</form>`;\n")
+
+			html.append("document.getElementById(\"displayDates\").innerHTML = \"" + globStrings["acctStartDate"] + " - " + globStrings["acctEndDate"] + "\";\n")
+
+
+			html.append("var acctStatus = \"Status : " + globStrings["acctStatus"] + "\";\n")			
+			html.append("document.getElementById(\"acctStatus\").innerHTML = acctStatus;\n")
+			
+			
             
             
 			for line in jHand:
@@ -490,38 +562,73 @@ def getBinaryFile(name):
 # ACCT FUNCTIONS
 #
 
-
+def initDatesBlank():
+	globStrings["acctStartDate"] = ""
+	globStrings["acctEndDate" ] = ""
+	globStrings["acctMinStartDate"] = ""
+	globStrings["acctMaxEndDate" ] = ""
+		
+		
 def importAcctCsv():
 # Here we don't need all the code to do with OldReceipts because this is existing data.
 
-    try:
-        fHand = open("acc.csv","r")
-    except:
+	acct.clear()
+	displayAcct.clear()
+	
+	try:
+		fHand = open("acc.csv","r")
+	except:
 #This is a new data set, just go back and and see if the user uploads
-        return
+		globStrings["acctStatus"] = "No data files.  Try uploading new data."
+		initDatesBlank()
+		return
     
-    newEntry = dict()
+#	newEntry = dict()
     
-    for line in fHand:
-        newEntry = dict()
-        arr = line.rstrip().split(",")
+	for line in fHand:
+		newEntry = dict()
+		arr = line.rstrip().split(",")
         
-        if arr[0] == "Charge Date":
-            continue
+		if arr[0] == "Charge Date":
+			continue
             
-        newEntry["Charge Date"] = arr[0]
-        newEntry["Posted Date"] = arr[1]
-        newEntry["Vendor"] = arr[2]
-        newEntry["Category"] = arr[3]
-        newEntry["Debit"] = arr[4]
-        newEntry["Receipt-ID"] = arr[5]
-        newEntry["Receipt-Index"] = arr[6]
+		newEntry["Charge Date"] = arr[0]
+		newEntry["Posted Date"] = arr[1]
+		newEntry["Vendor"] = arr[2]
+		newEntry["Category"] = arr[3]
+		newEntry["Debit"] = arr[4]
+		newEntry["Receipt-ID"] = arr[5]
+		newEntry["Receipt-Index"] = arr[6]
         
-        acct.append(newEntry)
+		acct.append(newEntry)
         
-    fHand.close();
+	fHand.close()
+
+	if len(acct) == 0:
+		globStrings["acctStatus"] = "Database is empty."
+		initDatesBlank()
+		return
+		
+	resetDates()
+	makeDisplaySet()
     
-    		
+	globStrings["acctStatus"] = "Loaded " + str(len(acct)) + " records."
+    
+def resetDates():
+
+	if len(acct) == 0:
+		globStrings["acctStatus"] = "Nothing to display"
+		return
+		
+	acct.sort(key = lambda x : x["Charge Date"])
+	
+	globStrings["acctMinStartDate"] = acct[0]["Charge Date"]
+	globStrings["acctMaxEndDate"] = acct[len(acct)-1]["Charge Date"]
+	
+	globStrings["acctStartDate"] = acct[0]["Charge Date"]
+	globStrings["acctEndDate"] = acct[len(acct)-1]["Charge Date"]
+	
+		
 def acctToCsv():
 
 	bookFhand = open("acc.csv","w")
@@ -556,7 +663,7 @@ def getOldReceipts():
 	try:
 		recFhand = open("receipt.csv","r")
 	except:
-#		acctStatus = acctStatus + "No existing transactions found in database. "
+		globStrings["acctStatus"] = "No existing transactions found in database. "
 		return
         
 	for line in recFhand:
@@ -580,7 +687,7 @@ def createCcEntry(line):
 		try:
 			entry[label] = arr[0]
 		except:
-#			acctStatus = "Tried to load invalid data set."
+			globStrings["acctStatus"] = "Tried to load invalid data set."
 			return False
 		arr.pop(0)
         	  
@@ -619,31 +726,33 @@ def createCcEntry(line):
 	return(entry)
 	
     
-    
+def catColorMaker():
+	
+	colorList = list()
+	
+	for item in displayAcct:
+		colorList.append(activeCategories[item["Category"]]["color"])	
+
+		
+	return(colorList)
+	
+				
 def newAcctCsv(data):
 
 	try:
 		header = data[0].rstrip().split(",")
 	except:
-#		acctStatus = acctStatus + "Unable to load any data at all from that file. "
+		globStrings["acctStatus"] = "Unable to load any data at all from that file"
 		return False;
 
 	ccLabels = [ "Transaction Date", "Posted Date", "Card No.", "Description", "Category", "Debit", "Credit" ]
 	
 	if header != ccLabels:
+		globStrings["acctStatus"] = "This does not look like a Capital One csv header."
 		return False
 		
 	
-	        
-#	if(( header[0] != "Transaction Date" ) | ( header[1] != "Posted Date" ) |
-#	( header[2] != "Card No." ) |
-#	( header[3] != "Description" ) |
-#	( header[4] != "Category" ) |
-#	( header[5] != "Debit") |
-#	( header[6] != "Credit")):
-#		acctStatus = acctStatus + "This does not look like a Capital One csv header. "
-#		return False
-        
+
 	data.pop(0)
     
 	ccBook = list()
@@ -712,9 +821,56 @@ def newAcctCsv(data):
        
 	acctToCsv()
 	receiptToCsv()
-	print("Entries processed to database", entries)
-    
-            
+	
+	resetDates()
+	makeDisplaySet()
+	
+	return True
+
+
+
+def makeDisplaySet():
+
+	displayAcct.clear()
+	
+	displayAcctTotal = 0
+	
+	for item in acct:
+		if item["Charge Date"] < globStrings["acctStartDate"] or item["Charge Date"] > globStrings["acctEndDate"] or item["Debit"] == "0.00":
+			continue	
+		displayAcct.append(item)
+		displayAcctTotal = displayAcctTotal + 1
+		
+	globStrings["acctStatus"] = "Loaded " + str(displayAcctTotal) + " records."
+
+	activeCategories.clear()
+	
+	totalCents = 0
+	
+	for item in displayAcct:
+		activeCategories[item["Category"]] = activeCategories.get(item["Category"],dict())
+	
+		activeCategories[item["Category"]]["count"] = activeCategories[item["Category"]].get("count",0) + 1
+		activeCategories[item["Category"]]["cents"] = activeCategories[item["Category"]].get("cents",0) + dollarsToCents(item["Debit"])
+		
+		totalCents = totalCents + dollarsToCents(item["Debit"])
+		
+	for k,v in activeCategories.items():
+	
+		red = min(255, int( 1.8 * (( 255 * v["cents"] ) / totalCents )) )
+		blue = min(255, int( 1.8 * (( 255 * v["count"] ) / len(displayAcct) )) )
+		
+		v["color"] = "rgba(" + str(red) + ",32," + str(blue) + ",1)"
+		
+	
+		
+		
+		
+		
+
+
+	
+         
 #
 # GLOBAL OBJECTS
 
@@ -749,15 +905,25 @@ ccCsvLabels = [ "Charge Date" , "Posted Date" , "Default Category", "Vendor" , "
 accEntryUrl = "/accentry.html?"
 accHomeUrl = "/index.html?"
 
-#acctStatus = ""
+
 	
 html = list()
 css = list()
+
 acct = list()
+displayAcct = list()
+
 oldReceipts = dict()
+
+globStrings = dict()
+
+activeCategories = dict()
+
 
 getOldReceipts()
 importAcctCsv()
+
+
 
 # Do this when it's time to send it, index.html is not static
 #importHtml()
@@ -766,6 +932,7 @@ importCss()
 
 hostName = "localhost"
 serverPort = 8080
+
 
 
 
