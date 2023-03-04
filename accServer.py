@@ -941,7 +941,7 @@ def newAcctCsv(data):
         
 # Or, we're finding the one(s) that existed on disk already.
 # Counts them only.
-		oldReceipts[receiptTag]["track"][1] = recExisting[1] + 1
+		oldReceipts[receiptTag]["track"][1] = oldReceipts[receiptTag]["track"][1] + 1
        
 	acctToCsv()
 	receiptToCsv()
@@ -962,6 +962,7 @@ def makeDisplaySet():
 	displayAcctTotal = 0
 	
 	for item in acct:
+		checkCategories[item["Category"]] = checkCategories.get(item["Category"],True)
 		if item["Charge Date"] < globStrings["acctStartDate"] or item["Charge Date"] > globStrings["acctEndDate"] or item["Debit"] == "0.00" or checkCategories[item["Category"]] is False:
 			continue	
 		displayAcct.append(item)
