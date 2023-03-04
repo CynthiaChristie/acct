@@ -79,6 +79,18 @@ position: relative;
 }
 
 
+#acctGraph {
+/*
+** accgraph.html - the graph window
+*/
+width: 90vw;
+height: 90vh;
+background-color: rgba(96,0,102,1);
+margin: 2px;
+border-style: solid;
+border-color: orange;
+border-width: 2px;
+}
 
 
 #acctStatus {
@@ -98,7 +110,21 @@ font-size: 24px;
 }
 
 
+#categoryFilter {
+/*
+** index.html - the category filter box
+*/
+font-size: 12px;
+}
 
+#catFilterForm {
+/*
+** index.html - the action form for category filter
+*/
+font-size: 8px;
+text-align: left;
+overflow-y: scroll;
+}
 
 
 #cents {

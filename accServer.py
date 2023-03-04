@@ -8,6 +8,14 @@ import cgi, cgitb
 import re
 import urllib.parse
 
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+from datetime import datetime
+
+
+
 #
 # Server - simple python example server that I'm trying to modify to suit.
 #
@@ -40,7 +48,34 @@ class MyServer(BaseHTTPRequestHandler):
 	
 		print(self.path)
 		
+		if self.path[:len(accGraphUrl)] == accGraphUrl or self.path == "/accgraph.html":
 		
+			myUrl = urllib.parse.unquote(self.path)
+			
+			tail = re.findall("^.*?\?(.+)$",myUrl)
+			
+			if len(tail) == 1:
+				tail = tail[0]
+				
+			whatType = re.findall("^type=(.+)$",tail)
+			
+			if len(whatType) == 1:
+				whatType = whatType[0]
+				
+				 
+			if whatType == "scatter":
+				draw_line_plot()
+			
+			if whatType == "bar":
+				draw_cat_plot()
+				
+			print("Sending accgraph.html")
+			self.send_response(200)
+			self.send_header("Content-type", "text/html")
+			self.end_headers()
+
+			for line in graphHtml:
+				self.wfile.write(bytes(line, "utf-8"))			
 		
 		if self.path == "/" or self.path[:2] == "/?" or self.path == "/index.html" or self.path[:len(accHomeUrl)] == accHomeUrl:
 		
@@ -60,30 +95,77 @@ class MyServer(BaseHTTPRequestHandler):
 				tail = []
 			else:
 				tail = tail.split("&")
+				
+				form = re.findall("^form=(.+)$",tail[0])
+				
+				if len(form) == 1:
+					form = form[0]
+					tail.pop(0)
+				else:
+					form = ""
+					
+				print("Form: "+form)
+				
+				setFlag = False
+				
+				if form == "catFilter":
+				
+					action = re.findall("^action=(.+)$",tail[0])
+					
+					if len(action) == 1:
+						tail.pop(0)
+						if action[0] == "set":
+							setFlag = True
+					
+					for item in acct:
+						if item["Charge Date"] < globStrings["acctStartDate"] or item["Charge Date"] > globStrings["acctEndDate"] or item["Debit"] == "0.00":
+							continue
+						checkCategories[item["Category"]] = setFlag
+							
+						
+					
+						
+					for item in tail:
+					
+						category = re.findall("^(.+)=set$",item)
+						
+						if len(category) == 1:
+							category = plusToSpace(category[0])
+							checkCategories[category] = True
+						
+				
+				if form == "dateForm":
+				
+					for item in tail:
+
+						start = re.findall("start=(.+)$",item)
+						if len(start) == 1:
+							newStartDate = start[0]
+				
+						end = re.findall("end=(.+)$",item)
+						if len(end) == 1:
+							newEndDate = end[0]					
+				
+				if form == "action":
+					
+					for item in tail:
+					
+						action = re.findall("action=(.+)$",item)
 			
-			for item in tail:
+						if len(action) == 1:
+							action = action[0]
+					
+							if action == "save":
+								print("save")
+								acctToCsv()
+					
+							if action == "reload":
+								print("reload")
+								importAcctCsv()
+			
+			
+#                                 Leave this \/
 		
-				start = re.findall("start=(.+)$",item)
-				if len(start) == 1:
-					newStartDate = start[0]
-				
-				end = re.findall("end=(.+)$",item)
-				if len(end) == 1:
-					newEndDate = end[0]
-				
-				action = re.findall("action=(.+)$",item)
-			
-				if len(action) == 1:
-					action = action[0]
-				
-					if action == "save":
-						print("save")
-						acctToCsv()
-					
-					if action == "reload":
-						print("reload")
-						importAcctCsv()
-					
 			if newStartDate > newEndDate:
 				trade = newStartDate
 				newStartDate = newEndDate
@@ -155,12 +237,12 @@ class MyServer(BaseHTTPRequestHandler):
 				self.wfile.write(bytes(line, "utf-8"))
             
 				
-		if self.path == "/img_w3slogo.gif":
-			print("Sending img_w3slogo.gif")
-			data = getBinaryFile("img_w3slogo.gif");
+		if self.path == "/graph.png":
+			
+			data = getBinaryFile("graph.png");
 					
 			self.send_response(200)
-			self.send_header("Content-type","image/gif")
+			self.send_header("Content-type","image/png")
 			self.end_headers();
 			
 			self.wfile.write(data)
@@ -464,8 +546,8 @@ def prepareAcctEntry(key,index,mods):
 			myHtml.append("<input type=\"hidden\" name=\"index\" value=\"" + index + "\">\n")
             
 			myHtml.append("</form>\n")
-			myHtml.append("<hr><div style=\"text-align: center;\"><a href=\"index.html?action=save\">Save and Return to Main Page</a></div>\n")
-			myHtml.append("<div style=\"text-align: center;\"><a href=\"index.html?action=reload\">Discard Changes and Return</a></div>\n")
+			myHtml.append("<hr><div style=\"text-align: center;\"><a href=\"index.html?form=action&action=save\">Save and Return to Main Page</a></div>\n")
+			myHtml.append("<div style=\"text-align: center;\"><a href=\"index.html?form=action&action=reload\">Discard Changes and Return</a></div>\n")
 			myHtml.append("<script>\n")
             						
 			myHtml.append("window.history.replaceState( { info: \"info\" }, \"accentry\", \"http://127.0.0.1:8080/accentry.html?key=" + key + "&index=" + index + "\");\n")
@@ -511,7 +593,45 @@ def importHtml():
 		
 	fHand = open("index.html","r")
 	jHand = open("acct.js","r")
+	
+	catFilterForm = "<div class=\"flexbox\">"
+
+	catFilterForm = catFilterForm + "<a href=\"index.html?form=catFilter&action=set\" style=\"font-size: 14px;\">Set All</a>\n"	
+	catFilterForm = catFilterForm + "<button type=\"submit\" form=\"catFilterForm\">Set Filter</button>\n"
+	catFilterForm = catFilterForm + "<a href=\"index.html?form=catFilter&action=clear\" style=\"font-size: 14px;\">Clear All</a>\n"
+
+
+	catFilterForm = catFilterForm + "</div><input type=\"hidden\" name=\"form\" value=\"catFilter\">\n"
+
+
+	catFilterForm = catFilterForm + "<div class=\"flexbox\">\n"
+	
+	count = 0
+
+	formCategories = dict()
+	sortCategories = list()
+	
+	for item in acct:
+		if item["Charge Date"] < globStrings["acctStartDate"] or item["Charge Date"] > globStrings["acctEndDate"] or item["Debit"] == "0.00":
+			continue
+		formCategories[item["Category"]] = None
+			
+	for k,v in formCategories.items():
+		sortCategories.append(k)
+
+	formCategories.clear()
+	sortCategories.sort()
+			
+	for item in sortCategories:
+		catFilterForm = catFilterForm + "<div><input type=\"checkbox\" id=\"cat" + item + "\" name=\"" + item + "\" value=\"set\" "
+		if checkCategories[item] is True:
+			catFilterForm = catFilterForm + "checked"
+			
+		catFilterForm = catFilterForm + ">\n" + "<label for=\"cat" + item + "\">" + item + "</label></div>\n"
+		count = count + 1
 		
+	catFilterForm = catFilterForm + "</div>\n"
+	
 	for line in fHand:
 		html.append(line)
 		if line.rstrip() == "<!--ACCTDATA-->":
@@ -522,7 +642,10 @@ def importHtml():
 			html.append("var acct = " + json.dumps(displayAcct) + ";\n")
 			html.append("var catColors = " + json.dumps(catColorMaker()) + ";\n")
 			
+			html.append("document.getElementById(\"catFilterForm\").innerHTML = `" + catFilterForm + "`;\n")
+			
 			html.append("document.getElementById(\"dateRangeForm\").innerHTML = `" +
+			"<input type=\"hidden\" name=\"form\" value=\"dateForm\">\n" +
 			"<label for=\"start\">Start Date</label>\n" +
 			"<label for=\"end\">End Date</label>\n" +
 			"<input type=\"date\" id=\"start\" name=\"start\" min=\"" + globStrings["acctMinStartDate"] +
@@ -530,7 +653,7 @@ def importHtml():
 			"<input type=\"date\" id=\"end\" name=\"end\" min=\"" + globStrings["acctMinStartDate"] +
 				"\" max=\"" + globStrings["acctMaxEndDate"] + "\">\n" +
 				"<br><input type=\"submit\" value=\"Set\">\n" +
-				"<br><a href=\"index.html?start=" + globStrings["acctMinStartDate"] +
+				"<br><a href=\"index.html?form=dateForm&start=" + globStrings["acctMinStartDate"] +
 				"&end=" + globStrings["acctMaxEndDate"] + "\">Reset</a>\n" +
 			"</form>`;\n")
 
@@ -609,6 +732,7 @@ def importAcctCsv():
 		initDatesBlank()
 		return
 		
+	setCategoryCheck()
 	resetDates()
 	makeDisplaySet()
     
@@ -822,6 +946,7 @@ def newAcctCsv(data):
 	acctToCsv()
 	receiptToCsv()
 	
+	setCategoryCheck()
 	resetDates()
 	makeDisplaySet()
 	
@@ -832,14 +957,20 @@ def newAcctCsv(data):
 def makeDisplaySet():
 
 	displayAcct.clear()
+	displayPandas.clear()
 	
 	displayAcctTotal = 0
 	
 	for item in acct:
-		if item["Charge Date"] < globStrings["acctStartDate"] or item["Charge Date"] > globStrings["acctEndDate"] or item["Debit"] == "0.00":
+		if item["Charge Date"] < globStrings["acctStartDate"] or item["Charge Date"] > globStrings["acctEndDate"] or item["Debit"] == "0.00" or checkCategories[item["Category"]] is False:
 			continue	
 		displayAcct.append(item)
 		displayAcctTotal = displayAcctTotal + 1
+		
+		for k,v in item.items():
+			displayPandas[k] = displayPandas.get(k,list())
+			displayPandas[k].append(v)
+			
 		
 	globStrings["acctStatus"] = "Loaded " + str(displayAcctTotal) + " records."
 
@@ -864,13 +995,170 @@ def makeDisplaySet():
 		
 	
 		
+def setCategoryCheck():
+
+	for item in acct:
+		checkCategories[item["Category"]] = checkCategories.get(item["Category"],True)
+				
 		
+
+
+#
+# Graph functions
+#
+
+def draw_line_plot():
+
+	fileName = "graph.png"
+	
+	centsTotal = 0
+	
+	for item in displayAcct:
+		centsTotal = centsTotal + dollarsToCents(item["Debit"])
 		
+	graphDict = dict()
+	
+	graphDict["Charge Date"] = displayPandas["Charge Date"]
+	graphDict["Category"] = displayPandas["Category"]
+	graphDict["Debit"] = displayPandas["Debit"]
+	
+	
+	use_df = pd.DataFrame.from_dict(graphDict)
+	use_df["Debit"] = pd.to_numeric(use_df["Debit"])
+#	outlierQ = 0.9
+	
+	use_df = use_df.groupby([ "Charge Date", "Category" ], as_index=False).sum()
+	
+	print(use_df)
+	
+#	tooBig_df = use_df[use_df["Debit"]>use_df["Debit"].quantile(outlierQ)]
+
+
+#	tooBig_df = tooBig_df.sort_values("Charge Date")
+	
+#	tooBig_df = tooBig_df.pivot(index="Charge Date", columns="Category", values="Debit")
+	
+	
+
+
+#	tb = json.loads(tooBig_df.to_json())
+	
+
+#	footNote =  [ "Not Included in Graph" ]
+#	footIndex = 0
+#	count = 0
+#	outlierDat = []
+	
+	
+#	for k0,v0 in tb.items():
+#		for k1,v1 in v0.items():
+#			if v1 is None:
+#				continue
+#			outlierDat.append([ k0, k1, v1 ])
+
+#	outlierDat.sort(key = lambda x: x[0])
+#	outlierDat.sort(key = lambda x: x[1])
+#	outlierDat.sort(reverse = True, key = lambda x: float(x[2]))	
+			
+#	for item in outlierDat:
+#		footNote[footIndex] = footNote[footIndex] + " - " + item[0] + " (\$"+floatToDollar(item[2]) + " on " + datetime.utcfromtimestamp(int(item[1])/1000).strftime("%m-%d")+ ")"
+#		count = count + 1
+#		if count == 3:
+#			count = 0
+#			footIndex = footIndex + 1
+#			footNote.append("")
+
+			
+#	print(footNote)
+#	exit()
+	
+#	use_df = use_df[use_df["Debit"]<=use_df["Debit"].quantile(outlierQ)]
+
+#	print(tooBig_df)
+#	exit()
+
+	use_df=use_df.pivot(index="Charge Date", columns="Category", values="Debit")
+#	use_df = use_df.fillna(0.0)
+
+	fileName = "graph.png"
+			
+	fig, ax = plt.subplots(figsize=(15,8))
+	plt.tick_params(axis="both", which="major", labelsize=8)
+#	plt.xticks(rotation=-30)
+
+	plt.subplots_adjust(bottom=0.2)
+	plt.subplots_adjust(left=0.05)
+	plt.subplots_adjust(right=0.8)
+
+	plt.xticks(rotation=45)
+	
+	
+	scat = sns.scatterplot(data=use_df,s=70)
+	
+	scat.axes.set_title(globStrings["acctStartDate"] + " to " + globStrings["acctEndDate"] + "  (Total: $" + centsToDollars(centsTotal) + ")",fontsize=30)
+	plt.legend(bbox_to_anchor=(1.02,1), loc="upper left", borderaxespad=0)
+
+#	footY = max(0.05 + 0.02 * len(footNote),0.07)
+	
+#	for note in footNote:
+#		while note[0] == " " or note[0] == "-":
+#			note = note[1:]
+#		plt.figtext(0.5,footY,note,ha="center",fontsize=9)
+#		footY = footY - 0.02
 		
+	ax.set(xlabel=None,ylabel=None)
+		
+	fig.savefig(fileName)
+	
+def draw_cat_plot():
+
+	
+	fileName = "graph.png"
+	
+	centsTotal = 0
+	
+	for item in displayAcct:
+		centsTotal = centsTotal + dollarsToCents(item["Debit"])
+		
+	graphDict = dict()
+	
+	graphDict["Category"] = displayPandas["Category"]
+	graphDict["Debit"] = displayPandas["Debit"]
+	
+	df = pd.DataFrame.from_dict(graphDict)
+	
+	df["Debit"] = pd.to_numeric(df["Debit"])
+
+	df_cat=df.groupby( [ "Category" ],as_index=False).sum()
+
+		
+	fig, ax = plt.subplots(figsize=(14,7),dpi=75)
 
 
 	
-         
+	plt.tick_params(axis="both", which="major", labelsize=8)
+	ax.set_xticklabels(ax.get_xticklabels(),rotation=20, ha="right")
+	
+#	plt.tight_layout()
+	bar = sns.barplot(data=df_cat,x="Category",y="Debit",palette="tab10")
+
+	bar.axes.set_title(globStrings["acctStartDate"] + " to " + globStrings["acctEndDate"] + "  (Total: $" + centsToDollars(centsTotal) + ")",fontsize=30)
+#	ax.set(title=globStrings["acctStartDate"] + " to " + globStrings["acctEndDate"],fontsize=30)
+	
+	ax.set(xlabel=None,ylabel=None)
+		
+	fig.savefig(fileName)
+
+
+def importGraphUrl():
+
+	fHand = open("accgraph.html" , "r")
+	
+	for line in fHand:
+		graphHtml.append(line)
+		
+	fHand.close()
+	
 #
 # GLOBAL OBJECTS
 
@@ -904,7 +1192,7 @@ ccCsvLabels = [ "Charge Date" , "Posted Date" , "Default Category", "Vendor" , "
 	
 accEntryUrl = "/accentry.html?"
 accHomeUrl = "/index.html?"
-
+accGraphUrl = "/accgraph.html?"
 
 	
 html = list()
@@ -912,6 +1200,7 @@ css = list()
 
 acct = list()
 displayAcct = list()
+displayPandas = dict()
 
 oldReceipts = dict()
 
@@ -919,16 +1208,19 @@ globStrings = dict()
 
 activeCategories = dict()
 
+checkCategories = dict()
+
+graphHtml = list()
 
 getOldReceipts()
 importAcctCsv()
-
 
 
 # Do this when it's time to send it, index.html is not static
 #importHtml()
 importCss()
 
+importGraphUrl()
 
 hostName = "localhost"
 serverPort = 8080
